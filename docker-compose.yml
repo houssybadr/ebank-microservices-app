@@ -1,0 +1,62 @@
+services:
+  discovery-service:
+    build:
+      context: .
+      dockerfile: discovery-service/Dockerfile
+    container_name: discovery-service
+    ports:
+      - "8761:8761"
+
+  customer-service:
+    build:
+      context: .
+      dockerfile: customer-service/Dockerfile
+    container_name: customer-service
+    ports:
+      - "8081:8081"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+    depends_on:
+      - discovery-service
+
+  ebank-service:
+    build:
+      context: .
+      dockerfile: ebank-service/Dockerfile
+    container_name: ebank-service
+    ports:
+      - "8082:8082"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+    depends_on:
+      - discovery-service
+
+  gateway-service:
+    build:
+      context: .
+      dockerfile: gateway-service/Dockerfile
+    container_name: gateway-service
+    ports:
+      - "9999:9999"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+    depends_on:
+      - discovery-service
+
+  ebank-bot:
+    build:
+      context: .
+      dockerfile: ebank-bot/Dockerfile
+    container_name: ebank-bot
+    ports:
+      - "8083:8083"
+    env_file:
+      - .env
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SPRING_AI_MCP_CLIENT_STREAMABLE_HTTP_CONNECTIONS_CUSTOMER_URL: http://customer-service:8081/mcp
+      SPRING_AI_MCP_CLIENT_STREAMABLE_HTTP_CONNECTIONS_ACCOUNT_URL: http://ebank-service:8082/mcp
+    depends_on:
+      - discovery-service
+      - customer-service
+      - ebank-service
